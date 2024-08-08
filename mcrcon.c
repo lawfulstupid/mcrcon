@@ -658,8 +658,6 @@ int run_terminal_mode(int sock)
 	puts("Logged in.\nType 'Q' or press Ctrl-D / Ctrl-C to disconnect.");
 
 	while (global_connection_alive) {
-		putchar('>');
-
 		int len = get_line(command, DATA_BUFFSIZE);
 		if (len < 1) continue; 
 	
