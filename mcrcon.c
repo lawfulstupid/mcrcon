@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 	// auth & commands
 	if (rcon_auth(global_rsock, pass)) {
 		if (terminal_mode)
-			run_terminal_mode(global_rsock);
+			exit_code = run_terminal_mode(global_rsock);
 		else
 			exit_code = run_commands(argc, argv);
 	}
@@ -449,7 +449,7 @@ rc_packet *net_recv_packet(int sd)
 	while (received < psize) {
 		ret = recv(sd, (char *) &packet + sizeof(int) + received, psize - received, 0);
 		if (ret == 0) { /* connection closed before completing receving */
-			fprintf(stderr, "Connection lost.\n");
+			fprintf(stderr, "Connection lost (2).\n");
 			global_connection_alive = 0;
 			return NULL;
 		}
@@ -466,7 +466,7 @@ int net_clean_incoming(int sd, int size)
 	int ret = recv(sd, tmp, size, 0);
 
 	if(ret == 0) {
-		fprintf(stderr, "Connection lost.\n");
+		fprintf(stderr, "Connection lost (3).\n");
 		global_connection_alive = 0;
 	}
 
@@ -667,7 +667,7 @@ int run_terminal_mode(int sock)
 			break;
 
 		if (len > 0 && global_connection_alive)
-			ret += rcon_command(sock, command);
+			ret = rcon_command(sock, command);
 
 		/* Special case for "stop" command to prevent server-side bug.
 		 * https://bugs.mojang.com/browse/MC-154617
@@ -683,7 +683,7 @@ int run_terminal_mode(int sock)
 		//command[0] = len = 0;
 	}
 
-	return ret;
+	return ret ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 // gets line from stdin and deals with rubbish left in the input buffer
