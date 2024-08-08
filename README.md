@@ -14,7 +14,8 @@ See https://pkgs.org/download/mcrcon for available packages in various Linux dis
 
 ##### building from sources:
 ```sh
-git clone https://github.com/Tiiffi/mcrcon.git
+git clone git@github.com:lawfulstupid/mcrcon.git
+sudo apt install libreadline-dev
 cd mcrcon
 make
 sudo make install

@@ -45,6 +45,8 @@
     #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <netdb.h>
+    #include <readline/readline.h>
+    #include <readline/history.h>
 #endif
 
 #define VERSION "0.7.2"
@@ -653,19 +655,30 @@ int run_commands(int argc, char *argv[])
 int run_terminal_mode(int sock)
 {
 	int ret = 0;
-	char command[DATA_BUFFSIZE] = {0x00};
+	char *command = NULL;
 
 	puts("Logged in.\nType 'Q' or press Ctrl-D / Ctrl-C to disconnect.");
 
-	while (global_connection_alive) {
-		int len = get_line(command, DATA_BUFFSIZE);
-		if (len < 1) continue; 
-	
-		if (strcasecmp(command, "Q") == 0)
-			break;
+	using_history();
 
-		if (len > 0 && global_connection_alive)
+	while (global_connection_alive) {
+		command = readline("");
+		int len = strlen(command);
+		if (len < 1) {
+			free(command);
+			command = NULL;
+			continue;
+		}
+	
+		if (strcasecmp(command, "Q") == 0) {
+			ret = 1;
+			break;
+		}
+
+		if (len > 0 && global_connection_alive) {
+			add_history(command);
 			ret = rcon_command(sock, command);
+		}
 
 		/* Special case for "stop" command to prevent server-side bug.
 		 * https://bugs.mojang.com/browse/MC-154617
@@ -678,7 +691,8 @@ int run_terminal_mode(int sock)
 			break;
 		}
 
-		//command[0] = len = 0;
+		free(command);
+		command = NULL;
 	}
 
 	return ret ? EXIT_SUCCESS : EXIT_FAILURE;
