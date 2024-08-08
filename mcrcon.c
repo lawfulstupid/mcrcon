@@ -607,6 +607,8 @@ int rcon_auth(int sock, char *passwd)
 
 int rcon_command(int sock, char *command)
 {
+	if (strlen(command) < 1) return 1;
+
 	rc_packet *packet = packet_build(RCON_PID, RCON_EXEC_COMMAND, command);
 	if (packet == NULL) {
 		global_connection_alive = 0;
