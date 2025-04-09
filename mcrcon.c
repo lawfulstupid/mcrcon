@@ -111,6 +111,7 @@ static int global_disable_colors = 0;
 static int global_connection_alive = 1;
 static int global_rsock;
 static int global_wait_seconds = 0;
+static char *global_rcon_name = NULL;
 
 #ifdef _WIN32
   // console coloring on windows
@@ -168,9 +169,12 @@ int main(int argc, char *argv[])
 	char *host = getenv("MCRCON_HOST");
 	char *pass = getenv("MCRCON_PASS");
 	char *port = getenv("MCRCON_PORT");
-	
+
 	if (!port) port = "25575";
 	if (!host) host = "localhost";
+
+	global_rcon_name = getenv("MCRCON_NAME");
+	if (!global_rcon_name || strlen(global_rcon_name) < 1) global_rcon_name = NULL;
 
 	// disable output buffering (https://github.com/Tiiffi/mcrcon/pull/39)
 	setvbuf(stdout, NULL, _IONBF, 0);
@@ -605,10 +609,31 @@ int rcon_auth(int sock, char *passwd)
 	return packet->id == -1 ? 0 : 1;
 }
 
+char* say2textraw(const char *message)
+{
+	char *result = malloc(17 + strlen(global_rcon_name) + strlen(message));
+	strcpy(result, "tellraw @a \"<");
+	strcat(result, global_rcon_name);
+	strcat(result, "> ");
+	strcat(result, message);
+	strcat(result, "\"");
+	return result;
+}
+
 int rcon_command(int sock, char *command)
 {
 	if (strlen(command) < 1) return 1;
 
+	// Remove leading "/"
+	if (strncmp("/", command, 1) == 0) {
+		command++; // move pointer forward 1
+	}
+	
+	// Convert /say commands to /textraw to add name
+	if (global_rcon_name != NULL && strncmp("say", command, 3) == 0) {
+		command = say2textraw(command+4);
+	}
+	
 	rc_packet *packet = packet_build(RCON_PID, RCON_EXEC_COMMAND, command);
 	if (packet == NULL) {
 		global_connection_alive = 0;
